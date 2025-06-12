@@ -10,6 +10,7 @@ USENIX Association, July 2020. https://www.usenix.org/conference/atc20/presentat
 '''
 
 from cachetools import LRUCache
+from math import floor, ceil
 import tarfile
 import struct
 import sys
@@ -47,6 +48,14 @@ open and close files that haven't been written in some time. How ironic.
 '''
 file_cache = FileCache()
 
+def align_io(offset, size, align_to=4096):
+    begin, end = offset, offset + size
+    begin_aligned = floor(begin / align_to) * align_to
+    end_aligned = ceil(end / align_to) * align_to
+    aligned = list(range(begin_aligned, end_aligned, align_to))
+    return [(i, align_to) for i in aligned[:-1]]
+
+
 def write_to_trace(input_str: str):
     for line in input_str.strip().split('\n'):
         if not line.strip():
@@ -65,8 +74,9 @@ def write_to_trace(input_str: str):
         os.makedirs('out', exist_ok=True)
         trace_name = f'out/{volume_id}.bin'
 
-        packed = struct.pack('<QIB', offset, size, io_type)
-        file_cache.get(trace_name).write(packed)
+        for aligned_offset, aligned_size in align_io(offset, size):
+            packed = struct.pack('<QIB', aligned_offset, aligned_size, io_type)
+            file_cache.get(trace_name).write(packed)
 
 
 if __name__ == "__main__":
