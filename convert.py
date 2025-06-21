@@ -53,7 +53,7 @@ def align_io(offset, size, align_to=4096):
     begin_aligned = floor(begin / align_to) * align_to
     end_aligned = ceil(end / align_to) * align_to
     aligned = list(range(begin_aligned, end_aligned, align_to))
-    return [(i, align_to) for i in aligned[:-1]]
+    return [(i, align_to) for i in aligned]
 
 
 def write_to_trace(input_str: str):
@@ -76,7 +76,9 @@ def write_to_trace(input_str: str):
 
         for aligned_offset, aligned_size in align_io(offset, size):
             packed = struct.pack('<QIB', aligned_offset, aligned_size, io_type)
-            file_cache.get(trace_name).write(packed)
+            trace_file = file_cache.get(trace_name)
+            trace_file.write(packed)
+            trace_file.flush()
 
 
 if __name__ == "__main__":
